@@ -16,6 +16,9 @@ app = FastAPI(title="Rentora API", version="1.0.0", docs_url="/docs")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,
+    # Accept any Vercel deployment (production + preview URLs), so a trailing
+    # slash or a preview subdomain in CORS_ORIGINS can't break the frontend.
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
