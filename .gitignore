@@ -1,0 +1,27 @@
+# Python / backend
+backend/.venv/
+backend/**/__pycache__/
+*.pyc
+backend/*.db
+backend/rentora.db
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Env files (keep the *.example, ignore real ones with secrets)
+.env
+.env.local
+!.env.example
+
+# Internal docs (not published)
+docs/
+
+# OS / editors / logs
+.DS_Store
+.idea/
+.vscode/
+*.log
