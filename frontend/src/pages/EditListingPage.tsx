@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import {
@@ -23,7 +23,6 @@ import { CATEGORIES, type Category, type Condition, type ListingStatus } from '.
 export function EditListingPage() {
   const { id } = useParams()
   const listingId = Number(id)
-  const navigate = useNavigate()
   const { user } = useAuth()
   const { lang, t } = useLanguage()
   const qc = useQueryClient()
