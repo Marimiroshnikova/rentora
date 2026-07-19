@@ -11,17 +11,17 @@ End result: a public URL like `https://rentora.vercel.app` you can open and shar
 
 ---
 
-## Step 1 — Backend on Render
+## Step 1: Backend on Render
 
 1. Go to [render.com](https://render.com) and sign in with GitHub.
 2. **New → Blueprint**, choose this repo. Render reads `render.yaml` and creates the `rentora-api` web service. (Or **New → Web Service** manually with: Root Directory `backend`, Build `pip install -r requirements.txt`, Start `alembic upgrade head && python seed.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT`, Plan **Free**.)
 3. Confirm the environment variables (`render.yaml` sets sensible defaults; `SECRET_KEY` is auto-generated).
 4. **Create / Deploy.** You get a URL like `https://rentora-api.onrender.com`.
-5. Verify it works: open `https://rentora-api.onrender.com/docs` — you should see the API docs.
+5. Verify it works: open `https://rentora-api.onrender.com/docs`. You should see the API docs.
 
 Copy your API URL; you need it next.
 
-## Step 2 — Frontend on Vercel
+## Step 2: Frontend on Vercel
 
 1. Go to [vercel.com](https://vercel.com) and sign in with GitHub.
 2. **Add New → Project → Import** this repo.
@@ -31,14 +31,14 @@ Copy your API URL; you need it next.
    - `VITE_UPLOAD_ORIGIN` = `https://rentora-api.onrender.com`
 5. **Deploy.** You get your public URL, e.g. `https://rentora.vercel.app`.
 
-## Step 3 — Connect them (CORS)
+## Step 3: Connect them (CORS)
 
 The backend must allow requests from your Vercel domain:
 
 1. Render → your service → **Environment** → set `CORS_ORIGINS` = `https://rentora.vercel.app` (your exact Vercel URL).
-2. Save — Render redeploys automatically.
+2. Save. Render redeploys automatically.
 
-## Step 4 — Open your site
+## Step 4: Open your site
 
 Visit your Vercel URL and log in with a demo account (password `Demo1234!`):
 
@@ -48,7 +48,7 @@ Visit your Vercel URL and log in with a demo account (password `Demo1234!`):
 
 ## Changing the site after it's live
 
-- **Every push to your GitHub `main` branch auto-redeploys both** Vercel and Render — no manual step.
+- **Every push to your GitHub `main` branch auto-redeploys both** Vercel and Render, with no manual step.
 - Other branches / pull requests get **preview URLs** on Vercel so you can test before going live.
 - Env vars can be changed in each dashboard, then redeploy.
 

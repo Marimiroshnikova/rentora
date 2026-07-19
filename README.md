@@ -1,25 +1,42 @@
 # Rentora
 
-**Rentora is a peer‑to‑peer marketplace for renting event decoration in Georgia** — balloons, backdrops, lighting, props, and photo‑zone sets. People rent what they need for a birthday, party, or photoshoot instead of buying it, and owners earn from items that would otherwise sit idle between their own events.
+Rentora is a peer-to-peer marketplace for renting event decoration in Georgia: balloons, backdrops, lighting, props, and photo-zone sets. People rent what they need for a birthday, party, or photoshoot instead of buying it, and owners earn from items that would otherwise sit idle between their own events.
+
+## Live demo
+
+The app is deployed and free to open:
+
+- **Website:** https://rentora-btu.vercel.app
+- **API:** https://rentora-api-jopw.onrender.com
+
+Hosted on **Vercel** (frontend) and **Render** (backend), both on free tiers. The backend sleeps when idle, so the first request after a while can take up to about 50 seconds to wake.
+
+Demo accounts (password `Demo1234!`):
+
+| Role | Email |
+|------|-------|
+| Admin | `admin@rentora.demo` |
+| Renter | `renter@rentora.demo` |
+| Owner | `owner@rentora.demo` |
 
 ## What it does
 
-- **Browse & discover** — search, filter (city, category, price, dates), sort, and an interactive map of Georgia.
-- **List items** — owners publish listings with photos, a daily price, a refundable deposit, and availability.
-- **Book & order** — request dates → owner accepts → demo pay → active → complete.
-- **Chat** — per‑booking messaging between renter and owner, with unread badges.
-- **Rate** — reviews and star ratings after completed rentals.
-- **Accounts** — register/login (JWT), renter/owner profiles, favorites, dashboards.
-- **Admin** — overview stats and moderation of users, listings, and bookings.
-- **Bilingual (ქართული / English)** with light & dark themes.
+- **Browse and discover:** search, filter (city, category, price, dates), sort, and an interactive map of Georgia.
+- **List items:** owners publish listings with photos, a daily price, a refundable deposit, and availability.
+- **Book and order:** request dates, owner accepts, demo pay, active, complete.
+- **Chat:** per-booking messaging between renter and owner, with unread badges.
+- **Rate:** reviews and star ratings after completed rentals.
+- **Accounts:** register and log in (JWT), renter/owner profiles, favorites, dashboards.
+- **Admin:** overview stats and moderation of users, listings, and bookings.
+- **Bilingual (ქართული / English)** with light and dark themes.
 
 ## Tech stack
 
 | Layer | Tech |
 |------|------|
 | **Frontend** | React 19 + TypeScript, Vite, Tailwind CSS v4, React Router, TanStack Query, Leaflet (maps) |
-| **Backend** | Python, FastAPI, SQLAlchemy 2, Alembic, Pydantic, JWT (python‑jose), passlib/bcrypt |
-| **Database** | SQLite (dev) — Postgres recommended for production |
+| **Backend** | Python, FastAPI, SQLAlchemy 2, Alembic, Pydantic, JWT (python-jose), passlib/bcrypt |
+| **Database** | SQLite in development; Postgres recommended for production |
 | **Auth** | JWT bearer tokens |
 
 ## How it works (user flow)
@@ -27,14 +44,14 @@
 ```mermaid
 flowchart LR
   A[Browse / Map] --> B[Open listing]
-  B --> C[Pick dates & request]
+  B --> C[Pick dates and request]
   C --> D[Owner accepts]
   D --> E[Demo pay]
-  E --> F[Chat & arrange pickup]
-  F --> G[Complete & review]
+  E --> F[Chat and arrange pickup]
+  F --> G[Complete and review]
 ```
 
-Owners follow: **List an item → receive requests → accept/decline → hand over → get reviewed.**
+Owners follow: list an item, receive requests, accept or decline, hand over, get reviewed.
 
 ## Architecture
 
@@ -113,21 +130,21 @@ sequenceDiagram
   O->>API: PATCH accept
   R->>API: POST /bookings/{id}/pay  (demo)
   API-->>R: CONFIRMED (dates blocked)
-  Note over API: start → ACTIVE, end → COMPLETED, then review
+  Note over API: start to ACTIVE, end to COMPLETED, then review
 ```
 
-> **Note:** payment is a **demo** — it confirms a booking without charging a real card.
+> Note: payment is a demo. It confirms a booking without charging a real card.
 
-## Getting started (run locally)
+## Run locally
 
-**Prerequisites:** Node 20+, Python 3.11+, Git.
+Prerequisites: Node 20+, Python 3.11+, Git.
 
 ```bash
 git clone <your-repo-url> rentora
 cd rentora
 ```
 
-You need **two terminals** (backend + frontend).
+You need two terminals (backend and frontend).
 
 ### 1. Backend (API)
 
@@ -139,7 +156,7 @@ python -m venv .venv
 pip install -r requirements.txt
 cp .env.example .env          # if .env is missing
 alembic upgrade head
-python seed.py                # sample data + demo accounts
+python seed.py                # sample data and demo accounts
 uvicorn app.main:app --reload --port 8001
 ```
 
@@ -154,19 +171,11 @@ cp .env.example .env          # if missing; VITE_API_URL must match the backend 
 npm run dev
 ```
 
-App: **http://127.0.0.1:5173**
-
-### Demo accounts — password `Demo1234!`
-
-| Role | Email |
-|------|-------|
-| Admin | `admin@rentora.demo` |
-| Renter | `renter@rentora.demo` |
-| Owner | `owner@rentora.demo` |
+App: http://127.0.0.1:5173
 
 ## Environment variables
 
-**`backend/.env`**
+`backend/.env`
 
 ```
 DATABASE_URL=sqlite:///./rentora.db
@@ -176,21 +185,18 @@ CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 UPLOAD_DIR=uploads
 ```
 
-**`frontend/.env`**
+`frontend/.env`
 
 ```
 VITE_API_URL=http://127.0.0.1:8001/api/v1
 VITE_UPLOAD_ORIGIN=http://127.0.0.1:8001
 ```
 
-## Deployment (free hosting)
+## Deployment
 
-The frontend is a static SPA and deploys free on **Vercel**:
-
-- Import the repo, set **Root Directory** to `frontend/` (Vite preset, build `npm run build`, output `dist`).
-- Set env vars `VITE_API_URL` and `VITE_UPLOAD_ORIGIN` to your deployed backend URL.
-
-The **FastAPI backend** needs a Python host — a free tier on **Render**, **Railway**, or **Fly.io** works. For real hosting, switch SQLite → a managed **Postgres** (free tier) and move `uploads/` to object storage, since serverless/ephemeral filesystems don't persist. Set the backend `CORS_ORIGINS` to your Vercel domain and a strong `SECRET_KEY`.
+- **Frontend on Vercel:** import the repo, set Root Directory to `frontend`, and set `VITE_API_URL` and `VITE_UPLOAD_ORIGIN` to the backend URL. An SPA rewrite is included in `frontend/vercel.json`.
+- **Backend on Render:** the included `render.yaml` provisions the API service (install, migrate, seed, run). Set `CORS_ORIGINS` to the Vercel URL.
+- For production, use a managed Postgres instead of SQLite and move uploaded images to object storage, since free instances use an ephemeral filesystem.
 
 ## Project structure
 
@@ -199,10 +205,10 @@ rentora/
 ├── backend/                 FastAPI app
 │   ├── app/
 │   │   ├── api/             route handlers
-│   │   ├── models/          SQLAlchemy entities + enums
+│   │   ├── models/          SQLAlchemy entities and enums
 │   │   ├── schemas/         Pydantic request/response models
 │   │   ├── services/        business logic
-│   │   ├── security.py      JWT & passwords
+│   │   ├── security.py      JWT and passwords
 │   │   └── main.py          entry point
 │   ├── alembic/             migrations
 │   ├── seed.py              sample data
