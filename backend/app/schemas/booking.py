@@ -60,6 +60,7 @@ class MessageOut(BaseModel):
     booking_id: int
     sender_id: int
     body: str
+    is_system: bool = False
     created_at: datetime
     sender: Optional[UserOut] = None
 

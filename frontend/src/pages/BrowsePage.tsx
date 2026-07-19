@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ArrowUpDown, ChevronDown, MapPin, PackageSearch, Search, X } from 'lucide-react'
@@ -9,10 +9,19 @@ import { ListingCardSkeleton } from '../components/ui/Skeleton'
 import { Input } from '../components/ui/Input'
 import { Button } from '../components/ui/Button'
 import { DatePicker } from '../components/ui/DatePicker'
+import { CityCombobox } from '../components/ui/CityCombobox'
 import { SelectMenu } from '../components/ui/SelectMenu'
 import { useLanguage } from '../context/LanguageContext'
 import { categoryLabel, type TranslationKey } from '../i18n/translations'
+import { cityLabel, cityValueForSubmit, GEORGIAN_CITIES } from '../lib/georgianCities'
 import { CATEGORIES, type Category } from '../types'
+
+function localizedCityLabel(rawCity: string, lang: 'en' | 'ka') {
+  const match = GEORGIAN_CITIES.find(
+    (c) => c.en.toLowerCase() === rawCity.toLowerCase() || c.ka === rawCity,
+  )
+  return match ? cityLabel(lang, match) : rawCity
+}
 
 type SortKey = 'newest' | 'price_asc' | 'price_desc' | 'rating' | 'distance'
 
@@ -29,7 +38,7 @@ export function BrowsePage() {
   const { t, lang } = useLanguage()
   const [params, setParams] = useSearchParams()
   const [q, setQ] = useState(params.get('q') || '')
-  const [city, setCity] = useState(params.get('city') || '')
+  const [city, setCity] = useState(() => localizedCityLabel(params.get('city') || '', lang))
   const category = params.get('category') || ''
   const sort = (params.get('sort') as SortKey) || 'newest'
   const page = Math.max(1, Number(params.get('page') || '1') || 1)
@@ -64,11 +73,21 @@ export function BrowsePage() {
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / PAGE_SIZE)) : 1
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [page])
+
+  useEffect(() => {
+    const paramCity = params.get('city')
+    if (paramCity) setCity(localizedCityLabel(paramCity, lang))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang])
+
   function commit(overrides: Record<string, string> = {}, resetPage = true) {
     const next = new URLSearchParams()
     const values = {
       q,
-      city,
+      city: cityValueForSubmit(city) || city,
       category,
       min_price: minPrice,
       max_price: maxPrice,
@@ -109,7 +128,7 @@ export function BrowsePage() {
 
   const activeTags: { key: string; label: string }[] = []
   if (filters.q) activeTags.push({ key: 'q', label: filters.q })
-  if (filters.city) activeTags.push({ key: 'city', label: filters.city })
+  if (filters.city) activeTags.push({ key: 'city', label: localizedCityLabel(filters.city, lang) })
   if (filters.category) {
     activeTags.push({ key: 'category', label: categoryLabel(lang, filters.category) })
   }
@@ -159,11 +178,7 @@ export function BrowsePage() {
           </label>
           <label className="search-field">
             <span>{t('browseCity')}</span>
-            <Input
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-              placeholder={t('registerCityPlaceholder')}
-            />
+            <CityCombobox value={city} onChange={setCity} placeholder={t('registerCityPlaceholder')} />
           </label>
         </div>
         <Button type="submit" className="search-submit">

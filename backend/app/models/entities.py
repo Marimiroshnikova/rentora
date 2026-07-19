@@ -25,6 +25,7 @@ from app.models.enums import (
     Category,
     Condition,
     ListingStatus,
+    NotificationType,
     UserRole,
 )
 
@@ -37,6 +38,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(120), nullable=False)
     city: Mapped[Optional[str]] = mapped_column(String(120), nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     role: Mapped[UserRole] = mapped_column(Enum(UserRole), default=UserRole.USER, nullable=False)
@@ -48,6 +50,9 @@ class User(Base):
     messages: Mapped[list["Message"]] = relationship(back_populates="sender")
     reviews: Mapped[list["Review"]] = relationship(back_populates="author")
     favorites: Mapped[list["Favorite"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", foreign_keys="Notification.user_id"
+    )
 
 
 class Listing(Base):
@@ -116,11 +121,17 @@ class Booking(Base):
     status: Mapped[BookingStatus] = mapped_column(Enum(BookingStatus), default=BookingStatus.PENDING, nullable=False)
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     listing: Mapped["Listing"] = relationship(back_populates="bookings")
     renter: Mapped["User"] = relationship(back_populates="bookings", foreign_keys=[renter_id])
     messages: Mapped[list["Message"]] = relationship(back_populates="booking", cascade="all, delete-orphan")
     reviews: Mapped[list["Review"]] = relationship(back_populates="booking", cascade="all, delete-orphan")
+    notifications: Mapped[list["Notification"]] = relationship(
+        back_populates="booking", cascade="all, delete-orphan"
+    )
 
 
 class Message(Base):
@@ -130,10 +141,25 @@ class Message(Base):
     booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id", ondelete="CASCADE"), nullable=False, index=True)
     sender_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
+    is_system: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     booking: Mapped["Booking"] = relationship(back_populates="messages")
     sender: Mapped["User"] = relationship(back_populates="messages")
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    booking_id: Mapped[int] = mapped_column(ForeignKey("bookings.id", ondelete="CASCADE"), nullable=False, index=True)
+    type: Mapped[NotificationType] = mapped_column(Enum(NotificationType), nullable=False)
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    user: Mapped["User"] = relationship(back_populates="notifications")
+    booking: Mapped["Booking"] = relationship(back_populates="notifications")
 
 
 class BookingRead(Base):

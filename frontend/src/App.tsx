@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { LanguageProvider } from './context/LanguageContext'
 import { Layout } from './components/layout/Layout'
+import { DashboardShell } from './components/layout/DashboardShell'
+import { ScrollToTop } from './components/layout/ScrollToTop'
 import { AuthLayout } from './components/layout/AuthLayout'
 import { AdminRoute, PrivateRoute } from './components/auth/PrivateRoute'
 import { HomePage } from './pages/HomePage'
@@ -12,9 +14,13 @@ import { ListingDetailPage } from './pages/ListingDetailPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { AddListingPage } from './pages/AddListingPage'
+import { EditListingPage } from './pages/EditListingPage'
+import { MyListingsPage } from './pages/MyListingsPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { BookingsPage } from './pages/BookingsPage'
+import { BookingDetailPage } from './pages/BookingDetailPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { MessagesPage } from './pages/MessagesPage'
 import { FavoritesPage } from './pages/FavoritesPage'
 import { AdminPage } from './pages/AdminPage'
@@ -36,6 +42,7 @@ export default function App() {
         <LanguageProvider>
           <AuthProvider>
             <BrowserRouter>
+              <ScrollToTop />
               <Routes>
                 <Route element={<AuthLayout />}>
                   <Route path="login" element={<LoginPage />} />
@@ -63,6 +70,14 @@ export default function App() {
                     }
                   />
                   <Route
+                    path="listings/:id/edit"
+                    element={
+                      <PrivateRoute>
+                        <EditListingPage />
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
                     path="profile"
                     element={
                       <PrivateRoute>
@@ -71,37 +86,20 @@ export default function App() {
                     }
                   />
                   <Route
-                    path="dashboard"
                     element={
                       <PrivateRoute>
-                        <DashboardPage />
+                        <DashboardShell />
                       </PrivateRoute>
                     }
-                  />
-                  <Route
-                    path="dashboard/bookings"
-                    element={
-                      <PrivateRoute>
-                        <BookingsPage />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="dashboard/messages"
-                    element={
-                      <PrivateRoute>
-                        <MessagesPage />
-                      </PrivateRoute>
-                    }
-                  />
-                  <Route
-                    path="dashboard/favorites"
-                    element={
-                      <PrivateRoute>
-                        <FavoritesPage />
-                      </PrivateRoute>
-                    }
-                  />
+                  >
+                    <Route path="dashboard" element={<DashboardPage />} />
+                    <Route path="dashboard/bookings" element={<BookingsPage />} />
+                    <Route path="dashboard/bookings/:id" element={<BookingDetailPage />} />
+                    <Route path="dashboard/notifications" element={<NotificationsPage />} />
+                    <Route path="dashboard/messages" element={<MessagesPage />} />
+                    <Route path="dashboard/favorites" element={<FavoritesPage />} />
+                    <Route path="dashboard/listings" element={<MyListingsPage />} />
+                  </Route>
                   <Route
                     path="admin"
                     element={

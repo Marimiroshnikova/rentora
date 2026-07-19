@@ -14,6 +14,10 @@ export function fetchBookings(asRole: 'renter' | 'owner' = 'renter') {
   return api<Booking[]>(`/bookings?as=${asRole}`)
 }
 
+export function fetchBooking(id: number) {
+  return api<Booking>(`/bookings/${id}`)
+}
+
 export function bookingAction(id: number, action: string) {
   return api<Booking>(`/bookings/${id}`, { method: 'PATCH', json: { action } })
 }

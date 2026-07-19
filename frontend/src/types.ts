@@ -19,12 +19,22 @@ export type BookingStatus =
   | 'COMPLETED'
   | 'DECLINED'
   | 'CANCELLED'
+export type NotificationType =
+  | 'BOOKING_REQUESTED'
+  | 'BOOKING_ACCEPTED'
+  | 'BOOKING_DECLINED'
+  | 'PAYMENT_SUCCEEDED'
+  | 'PAYMENT_FAILED'
+  | 'BOOKING_CANCELLED'
+  | 'BOOKING_COMPLETED'
+  | 'NEW_MESSAGE'
 
 export interface User {
   id: number
   email: string
   full_name: string
   city?: string | null
+  phone?: string | null
   bio?: string | null
   avatar_url?: string | null
   role: UserRole
@@ -103,8 +113,26 @@ export interface Message {
   booking_id: number
   sender_id: number
   body: string
+  is_system?: boolean
   created_at: string
   sender?: User | null
+}
+
+export interface Notification {
+  id: number
+  user_id: number
+  booking_id: number
+  type: NotificationType
+  is_read: boolean
+  created_at: string
+  booking?: Booking | null
+}
+
+export interface NotificationListResponse {
+  items: Notification[]
+  total: number
+  page: number
+  page_size: number
 }
 
 export interface Review {

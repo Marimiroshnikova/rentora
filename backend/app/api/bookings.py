@@ -133,15 +133,8 @@ def post_message(
     user: User = Depends(get_current_user),
 ):
     message_limiter.check(f"msg:{user.id}:{client_ip(request)}")
-    booking_service.assert_booking_party(db, booking_id, user)
-    msg = Message(booking_id=booking_id, sender_id=user.id, body=payload.body.strip())
-    db.add(msg)
-    db.commit()
-    msg = (
-        db.scalars(select(Message).options(joinedload(Message.sender)).where(Message.id == msg.id))
-        .unique()
-        .first()
-    )
+    booking = booking_service.assert_booking_party(db, booking_id, user)
+    msg = message_service.create_message(db, booking, user, payload.body.strip())
     return MessageOut.model_validate(msg)
 
 

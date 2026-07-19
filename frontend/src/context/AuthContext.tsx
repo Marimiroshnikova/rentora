@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import * as authApi from '../api/auth'
+import { uploadAvatar as uploadAvatarApi } from '../api/users'
 import { getToken, setToken } from '../api/client'
 import type { User } from '../types'
 
@@ -25,6 +26,7 @@ interface AuthContextValue {
   logout: () => void
   refresh: () => Promise<void>
   updateProfile: (data: Partial<User> & { is_owner?: boolean }) => Promise<void>
+  uploadAvatar: (file: File) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -85,9 +87,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updated)
   }, [])
 
+  const uploadAvatar = useCallback(async (file: File) => {
+    const updated = await uploadAvatarApi(file)
+    setUser(updated)
+  }, [])
+
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, refresh, updateProfile }),
-    [user, loading, login, register, logout, refresh, updateProfile],
+    () => ({ user, loading, login, register, logout, refresh, updateProfile, uploadAvatar }),
+    [user, loading, login, register, logout, refresh, updateProfile, uploadAvatar],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

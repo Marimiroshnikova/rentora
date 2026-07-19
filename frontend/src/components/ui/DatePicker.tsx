@@ -8,31 +8,32 @@ type DatePickerProps = {
   min?: string
   placeholder?: string
   'data-field'?: string
+  disabledDates?: Set<string>
 }
 
-function toISO(d: Date) {
+export function toISO(d: Date) {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${d.getFullYear()}-${m}-${day}`
 }
 
-function parseISO(s: string): Date | null {
+export function parseISO(s: string): Date | null {
   if (!s) return null
   const [y, m, d] = s.split('-').map(Number)
   if (!y || !m || !d) return null
   return new Date(y, m - 1, d)
 }
 
-function startOfDay(d: Date) {
+export function startOfDay(d: Date) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
-const WEEKDAYS = {
+export const WEEKDAYS = {
   ka: ['ორ', 'სა', 'ოთ', 'ხუ', 'პა', 'შა', 'კვ'],
   en: ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'],
 }
 
-const MONTHS = {
+export const MONTHS = {
   ka: [
     'იანვარი', 'თებერვალი', 'მარტი', 'აპრილი', 'მაისი', 'ივნისი',
     'ივლისი', 'აგვისტო', 'სექტემბერი', 'ოქტომბერი', 'ნოემბერი', 'დეკემბერი',
@@ -49,6 +50,7 @@ export function DatePicker({
   min,
   placeholder,
   'data-field': dataField,
+  disabledDates,
 }: DatePickerProps) {
   const { lang } = useLanguage()
   const rootRef = useRef<HTMLDivElement>(null)
@@ -86,7 +88,8 @@ export function DatePicker({
   }, [view])
 
   function disabled(d: Date) {
-    return minDate ? startOfDay(d) < startOfDay(minDate) : false
+    if (minDate && startOfDay(d) < startOfDay(minDate)) return true
+    return disabledDates?.has(toISO(d)) ?? false
   }
 
   const label = selected

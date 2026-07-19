@@ -1,9 +1,11 @@
 import { Link, NavLink } from 'react-router-dom'
 import { ChevronDown, Menu, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { mediaUrl } from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
 import { useLanguage } from '../../context/LanguageContext'
 import { Button } from '../ui/Button'
+import { NotificationBell } from './NotificationBell'
 import { PrefsToggles } from './PrefsToggles'
 
 function initials(name: string) {
@@ -44,7 +46,11 @@ export function Navbar() {
   return (
     <header className="site-header sticky top-0 z-40 w-full">
       <div className="flex h-14 w-full items-center gap-3 px-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex shrink-0 items-center gap-2 text-cream">
+        <Link
+          to="/"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="flex shrink-0 items-center gap-2 text-cream"
+        >
           <img src="/favicon.svg" alt="" className="h-7 w-7" />
           <span className="font-display text-xl tracking-tight sm:text-2xl">{t('brand')}</span>
         </Link>
@@ -78,6 +84,7 @@ export function Navbar() {
 
         <div className="ml-auto flex items-center gap-2">
           <PrefsToggles className="hidden sm:flex" />
+          {user ? <NotificationBell /> : null}
 
           {user ? (
             <div className="relative" ref={accountRef}>
@@ -89,8 +96,12 @@ export function Navbar() {
                 aria-label={t('navProfile')}
                 onClick={() => setAccountOpen((v) => !v)}
               >
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-forest/45 text-[11px] font-bold text-mint">
-                  {initials(user.full_name)}
+                <span className="inline-flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-forest/45 text-[11px] font-bold text-mint">
+                  {user.avatar_url ? (
+                    <img src={mediaUrl(user.avatar_url)} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    initials(user.full_name)
+                  )}
                 </span>
                 <ChevronDown size={14} className="text-mist" aria-hidden />
               </button>

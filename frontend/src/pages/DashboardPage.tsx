@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { CalendarDays, Heart, Inbox, Package } from 'lucide-react'
-import { fetchBookings } from '../api/bookings'
-import { fetchListings, updateListing } from '../api/listings'
+import { bookingAction, fetchBookings } from '../api/bookings'
+import { deleteListing, fetchListings, updateListing } from '../api/listings'
 import { fetchFavorites } from '../api/favorites'
+import { mediaUrl } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { BookingStatusBadge } from '../components/bookings/BookingStatusBadge'
@@ -37,40 +38,36 @@ export function DashboardPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['listings', 'mine'] }),
   })
 
+  const deleteMut = useMutation({
+    mutationFn: (id: number) => deleteListing(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['listings', 'mine'] }),
+  })
+
+  const bookingActionMut = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: string }) => bookingAction(id, action),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['bookings'] }),
+  })
+
   function toggleListing(listing: Listing) {
     const next = listing.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
     statusMut.mutate({ id: listing.id, status: next })
   }
 
+  function removeListing(listing: Listing) {
+    if (window.confirm(t('listingDeleteConfirm'))) {
+      deleteMut.mutate(listing.id)
+    }
+  }
+
   const pendingIncoming = (incoming.data ?? []).filter((b) => b.status === 'PENDING')
+  const visibleListings = (listings.data?.items ?? []).filter((l) => l.status !== 'HIDDEN')
 
   return (
     <div>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-4xl text-cream">
-            {t('dashboardHi')}
-            {firstName ? `, ${firstName}` : ''}
-          </h1>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {user?.is_owner ? (
-            <Link to="/listings/new">
-              <Button>{t('dashboardNewListing')}</Button>
-            </Link>
-          ) : (
-            <Link to="/profile">
-              <Button>{t('dashboardEnableOwner')}</Button>
-            </Link>
-          )}
-          <Link to="/dashboard/bookings">
-            <Button variant="ghost">{t('dashboardBookings')}</Button>
-          </Link>
-          <Link to="/dashboard/favorites">
-            <Button variant="ghost">{t('dashboardFavorites')}</Button>
-          </Link>
-        </div>
-      </div>
+      <h1 className="font-display text-4xl text-cream">
+        {t('dashboardHi')}
+        {firstName ? `, ${firstName}` : ''}
+      </h1>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <StatLink
@@ -86,7 +83,7 @@ export function DashboardPage() {
           value={favorites.data?.length ?? 0}
         />
         <StatLink
-          to={user?.is_owner ? '/dashboard' : '/browse'}
+          to={user?.is_owner ? '/dashboard/listings' : '/browse'}
           icon={<Package size={18} />}
           label={t('dashboardMyListings')}
           value={listings.data?.total ?? 0}
@@ -128,17 +125,27 @@ export function DashboardPage() {
         <section className="mt-8">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <h2 className="font-display text-2xl text-cream">{t('dashboardMyListings')}</h2>
-            <Link to="/listings/new" className="text-sm font-semibold text-sage hover:text-mint">
-              {t('dashboardNewListing')}
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link to="/dashboard/listings" className="text-sm font-semibold text-sage hover:text-mint">
+                {t('dashboardListingsSeeAll')}
+              </Link>
+              <Link to="/listings/new" className="text-sm font-semibold text-sage hover:text-mint">
+                {t('dashboardNewListing')}
+              </Link>
+            </div>
           </div>
           <div className="space-y-2">
-            {(listings.data?.items ?? []).map((listing) => (
+            {visibleListings.slice(0, 5).map((listing) => (
               <div
                 key={listing.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-panel/50 px-4 py-3"
+                className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-panel/50 px-4 py-3"
               >
-                <div className="min-w-0">
+                <img
+                  src={listing.images?.[0] ? mediaUrl(listing.images[0].url) : '/placeholder-decor.svg'}
+                  alt=""
+                  className="h-16 w-20 shrink-0 rounded-xl object-cover"
+                />
+                <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Link to={`/items/${listing.id}`} className="font-medium text-cream hover:text-mint">
                       {listing.title}
@@ -152,6 +159,9 @@ export function DashboardPage() {
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
+                  <Link to={`/listings/${listing.id}/edit`}>
+                    <Button variant="secondary">{t('listingEdit')}</Button>
+                  </Link>
                   <Link to={`/items/${listing.id}`}>
                     <Button variant="ghost">{t('listingView')}</Button>
                   </Link>
@@ -162,10 +172,17 @@ export function DashboardPage() {
                   >
                     {listing.status === 'ACTIVE' ? t('listingPause') : t('listingActivate')}
                   </Button>
+                  <Button
+                    variant="danger"
+                    disabled={deleteMut.isPending}
+                    onClick={() => removeListing(listing)}
+                  >
+                    {t('listingDelete')}
+                  </Button>
                 </div>
               </div>
             ))}
-            {!listings.data?.items?.length ? (
+            {!visibleListings.length ? (
               <EmptyState
                 title={t('dashboardNoListings')}
                 description={t('dashboardNoListingsHint')}
@@ -181,22 +198,54 @@ export function DashboardPage() {
 
       {user?.is_owner ? (
         <section className="mt-8">
-          <h2 className="font-display text-2xl text-cream">{t('dashboardIncoming')}</h2>
-          <div className="mt-3 space-y-2">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="font-display text-2xl text-cream">{t('dashboardIncoming')}</h2>
+            {pendingIncoming.length ? (
+              <Link to="/dashboard/bookings?as=owner" className="text-sm font-semibold text-sage hover:text-mint">
+                {t('dashboardListingsSeeAll')}
+              </Link>
+            ) : null}
+          </div>
+          <div className="space-y-2">
             {pendingIncoming.slice(0, 5).map((b) => (
-              <Link
+              <div
                 key={b.id}
-                to="/dashboard/bookings?as=owner"
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-panel/50 px-4 py-3 hover:border-sage/40"
+                className="flex flex-wrap items-center gap-3 rounded-2xl border border-line bg-panel/50 p-3"
               >
-                <div>
-                  <p className="text-cream">{b.listing?.title}</p>
-                  <p className="text-sm text-mist">
+                <img
+                  src={b.listing?.images?.[0] ? mediaUrl(b.listing.images[0].url) : '/placeholder-decor.svg'}
+                  alt=""
+                  className="h-16 w-20 shrink-0 rounded-xl object-cover"
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-cream">{b.listing?.title}</p>
+                    <BookingStatusBadge status={b.status} />
+                  </div>
+                  <p className="mt-1 text-sm text-mist">
                     {b.renter?.full_name} · {b.start_date} → {b.end_date}
+                    {b.renter?.phone ? ` · ${t('bookingRenterPhone')}: ${b.renter.phone}` : ''}
+                  </p>
+                  <p className="mt-1 text-sm text-mist">
+                    {t('bookingTotalPayout')}: <span className="text-cream">{Number(b.total_price).toFixed(2)} ₾</span>
                   </p>
                 </div>
-                <BookingStatusBadge status={b.status} />
-              </Link>
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button
+                    disabled={bookingActionMut.isPending}
+                    onClick={() => bookingActionMut.mutate({ id: b.id, action: 'accept' })}
+                  >
+                    {t('actionAccept')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    disabled={bookingActionMut.isPending}
+                    onClick={() => bookingActionMut.mutate({ id: b.id, action: 'decline' })}
+                  >
+                    {t('actionDecline')}
+                  </Button>
+                </div>
+              </div>
             ))}
             {!pendingIncoming.length ? (
               <EmptyState icon={<Inbox size={24} />} title={t('dashboardNoPending')} />

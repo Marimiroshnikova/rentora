@@ -14,7 +14,8 @@ export function FloatingMessages() {
     queryKey: ['unread-summary'],
     queryFn: fetchUnreadSummary,
     enabled: !!user,
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: true,
   })
   const unreadTotal = unread.data?.total ?? 0
 

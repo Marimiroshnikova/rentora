@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import {
   fetchBookings,
   fetchMessages,
@@ -15,7 +15,13 @@ import { Input } from '../components/ui/Input'
 import { useLanguage } from '../context/LanguageContext'
 import { statusLabel } from '../i18n/translations'
 import type { Message } from '../types'
-import { MessageCircle } from 'lucide-react'
+import { ArrowLeft, MessageCircle, PackageSearch } from 'lucide-react'
+
+function localizedSystemBody(body: string, lang: 'en' | 'ka') {
+  const lines = body.split('\n')
+  if (lines.length === 2) return lang === 'ka' ? lines[1] : lines[0]
+  return body
+}
 
 function dayKey(iso: string) {
   const d = new Date(iso)
@@ -35,6 +41,7 @@ function dayLabel(iso: string, todayLabel: string, yesterdayLabel: string) {
 export function MessagesPage() {
   const { user } = useAuth()
   const { lang, t } = useLanguage()
+  const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const selected = Number(params.get('booking') || 0)
   const [body, setBody] = useState('')
@@ -49,7 +56,8 @@ export function MessagesPage() {
   const unread = useQuery({
     queryKey: ['unread-summary'],
     queryFn: fetchUnreadSummary,
-    refetchInterval: 15_000,
+    refetchInterval: 5_000,
+    refetchIntervalInBackground: true,
     enabled: !!user,
   })
 
@@ -66,6 +74,7 @@ export function MessagesPage() {
     queryFn: () => fetchMessages(activeId),
     enabled: !!activeId,
     refetchInterval: 5000,
+    refetchIntervalInBackground: true,
   })
 
   useEffect(() => {
@@ -127,6 +136,14 @@ export function MessagesPage() {
 
   return (
     <div>
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-sage transition hover:text-mint"
+      >
+        <ArrowLeft size={16} />
+        {t('back')}
+      </button>
       <h1 className="font-display text-4xl text-cream">{t('messagesTitle')}</h1>
       <p className="mt-2 text-mist">{t('messagesLead')}</p>
 
@@ -138,7 +155,7 @@ export function MessagesPage() {
               <button
                 key={b.id}
                 type="button"
-                onClick={() => setParams({ booking: String(b.id) })}
+                onClick={() => setParams({ booking: String(b.id) }, { replace: true })}
                 className={`w-full rounded-xl px-3 py-3 text-left text-sm ${
                   activeId === b.id ? 'bg-forest/40 text-cream' : 'text-mist hover:bg-panel-2'
                 }`}
@@ -177,11 +194,28 @@ export function MessagesPage() {
                 </p>
                 <div className="space-y-3">
                   {group.items.map((m) => {
-                    const mine = m.sender_id === user?.id
                     const time = new Date(m.created_at).toLocaleTimeString([], {
                       hour: '2-digit',
                       minute: '2-digit',
                     })
+                    if (m.is_system) {
+                      return (
+                        <div key={m.id} className="flex justify-center">
+                          <div className="max-w-[85%] rounded-2xl border border-line bg-panel-2/70 px-4 py-3 text-center text-sm text-mist">
+                            <PackageSearch size={18} className="mx-auto mb-1.5 text-sage" />
+                            <p>{localizedSystemBody(m.body, lang)}</p>
+                            <p className="mt-1 text-[10px] opacity-60">{time}</p>
+                            <Link
+                              to={`/dashboard/bookings/${m.booking_id}`}
+                              className="mt-2 inline-block text-xs font-semibold text-sage hover:text-mint"
+                            >
+                              {t('messagesSystemViewBooking')}
+                            </Link>
+                          </div>
+                        </div>
+                      )
+                    }
+                    const mine = m.sender_id === user?.id
                     return (
                       <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
                         <div

@@ -4,7 +4,7 @@ export const GEORGIAN_CITIES: GeorgianCity[] = [
   { en: 'Tbilisi', ka: 'თბილისი' },
   { en: 'Batumi', ka: 'ბათუმი' },
   { en: 'Kutaisi', ka: 'ქუთაისი' },
-  { en: 'Rustavi', ka: 'რუსტავი' },
+  { en: 'Rustavi', ka: 'რუსთავი' },
   { en: 'Gori', ka: 'გორი' },
   { en: 'Zugdidi', ka: 'ზუგდიდი' },
   { en: 'Poti', ka: 'ფოთი' },

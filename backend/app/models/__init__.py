@@ -4,6 +4,7 @@ from app.models.enums import (
     Category,
     Condition,
     ListingStatus,
+    NotificationType,
     UserRole,
 )
 from app.models.entities import (
@@ -14,6 +15,7 @@ from app.models.entities import (
     Listing,
     ListingImage,
     Message,
+    Notification,
     Review,
     User,
 )
@@ -26,6 +28,7 @@ __all__ = [
     "Booking",
     "BookingRead",
     "Message",
+    "Notification",
     "Review",
     "Favorite",
     "UserRole",
@@ -34,4 +37,5 @@ __all__ = [
     "Condition",
     "BookingStatus",
     "BlockReason",
+    "NotificationType",
 ]

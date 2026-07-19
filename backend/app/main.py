@@ -4,7 +4,7 @@ from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from app.api import admin, auth, bookings, favorites, listings, users
+from app.api import admin, auth, bookings, favorites, listings, notifications, users
 from app.config import get_settings
 from app.database import Base, engine
 
@@ -50,6 +50,7 @@ app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(users.router, prefix=API_PREFIX)
 app.include_router(listings.router, prefix=API_PREFIX)
 app.include_router(bookings.router, prefix=API_PREFIX)
+app.include_router(notifications.router, prefix=API_PREFIX)
 app.include_router(favorites.router, prefix=API_PREFIX)
 app.include_router(admin.router, prefix=API_PREFIX)
 

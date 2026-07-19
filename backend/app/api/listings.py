@@ -1,6 +1,7 @@
 import uuid
 from datetime import date
 from decimal import Decimal
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import select
@@ -174,7 +175,7 @@ def delete_listing(
     listing = listing_service.get_listing(db, listing_id)
     if listing.owner_id != user.id and user.role.value != "ADMIN":
         raise HTTPException(status_code=403, detail="Not your listing")
-    listing = listing_service.update_listing(db, listing, {"status": ListingStatus.PAUSED})
+    listing = listing_service.update_listing(db, listing, {"status": ListingStatus.HIDDEN})
     return to_listing_out(db, listing, user)
 
 
@@ -202,6 +203,28 @@ async def upload_images(
             )
         )
     db.commit()
+    listing = listing_service.get_listing(db, listing_id)
+    return to_listing_out(db, listing, user)
+
+
+@router.delete("/{listing_id}/images/{image_id}", response_model=ListingOut)
+def delete_image(
+    listing_id: int,
+    image_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    listing = listing_service.get_listing(db, listing_id)
+    if listing.owner_id != user.id and user.role.value != "ADMIN":
+        raise HTTPException(status_code=403, detail="Not your listing")
+    image = next((img for img in listing.images if img.id == image_id), None)
+    if not image:
+        raise HTTPException(status_code=404, detail="Image not found")
+    file_path = settings.upload_path / Path(image.url).name
+    db.delete(image)
+    db.commit()
+    if file_path.exists():
+        file_path.unlink(missing_ok=True)
     listing = listing_service.get_listing(db, listing_id)
     return to_listing_out(db, listing, user)
 

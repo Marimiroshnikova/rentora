@@ -1,9 +1,29 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import and_, func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from app.models import Booking, BookingRead, Listing, Message, User
+from app.models import Booking, BookingRead, Listing, Message, NotificationType, User
+from app.services import notification_service
+
+
+def create_message(db: Session, booking: Booking, sender: User, body: str) -> Message:
+    message = Message(booking_id=booking.id, sender_id=sender.id, body=body)
+    db.add(message)
+    db.flush()
+
+    owner_id = booking.listing.owner_id
+    recipient_id = owner_id if sender.id == booking.renter_id else booking.renter_id
+    notification_service.create_notification(
+        db, user_id=recipient_id, booking=booking, type=NotificationType.NEW_MESSAGE
+    )
+
+    db.commit()
+    return (
+        db.scalars(select(Message).options(joinedload(Message.sender)).where(Message.id == message.id))
+        .unique()
+        .first()
+    )
 
 
 def mark_thread_read(db: Session, booking_id: int, user: User) -> BookingRead:

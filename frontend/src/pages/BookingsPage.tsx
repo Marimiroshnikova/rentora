@@ -1,22 +1,39 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, Search } from 'lucide-react'
 import { bookingAction, fetchBookings, payBooking, postReview } from '../api/bookings'
+import { mediaUrl } from '../api/client'
 import { BookingStatusBadge } from '../components/bookings/BookingStatusBadge'
 import { BookingTimeline } from '../components/bookings/BookingTimeline'
 import { Button } from '../components/ui/Button'
 import { EmptyState } from '../components/ui/EmptyState'
 import { ListingCardSkeleton } from '../components/ui/Skeleton'
 import { useAuth } from '../context/AuthContext'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { DatePicker } from '../components/ui/DatePicker'
 import { Field, Input, Textarea } from '../components/ui/Input'
 import { useLanguage } from '../context/LanguageContext'
+import type { TranslationKey } from '../i18n/translations'
 
 function rentalDays(start: string, end: string) {
   const a = new Date(start)
   const b = new Date(end)
   return Math.max(0, Math.round((b.getTime() - a.getTime()) / 86400000))
 }
+
+type StatusTab = 'ongoing' | 'completed' | 'declined'
+type OngoingSubStatus = 'ALL' | 'PENDING' | 'ACCEPTED' | 'CONFIRMED' | 'ACTIVE'
+
+const ONGOING_STATUSES = ['PENDING', 'ACCEPTED', 'CONFIRMED', 'ACTIVE']
+const DECLINED_STATUSES = ['DECLINED', 'CANCELLED']
+
+const ONGOING_SUB_FILTERS: { value: OngoingSubStatus; label: TranslationKey }[] = [
+  { value: 'ALL', label: 'browseAll' },
+  { value: 'PENDING', label: 'timelinePending' },
+  { value: 'ACCEPTED', label: 'timelineAccepted' },
+  { value: 'CONFIRMED', label: 'timelinePaid' },
+  { value: 'ACTIVE', label: 'timelineActive' },
+]
 
 export function BookingsPage() {
   const { user } = useAuth()
@@ -27,11 +44,38 @@ export function BookingsPage() {
   const [reviewBooking, setReviewBooking] = useState<number | null>(null)
   const [rating, setRating] = useState('5')
   const [comment, setComment] = useState('')
+  const [tab, setTab] = useState<StatusTab>('ongoing')
+  const [ongoingSubFilter, setOngoingSubFilter] = useState<OngoingSubStatus>('ALL')
+  const [search, setSearch] = useState('')
+  const [dateFrom, setDateFrom] = useState('')
+  const [dateTo, setDateTo] = useState('')
 
   const { data, isLoading } = useQuery({
     queryKey: ['bookings', asOwner ? 'owner' : 'renter'],
     queryFn: () => fetchBookings(asOwner ? 'owner' : 'renter'),
   })
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    return (data ?? []).filter((b) => {
+      if (q) {
+        const haystack = `${b.listing?.title ?? ''} ${b.renter?.full_name ?? ''}`.toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
+      if (dateFrom && b.start_date < dateFrom) return false
+      if (dateTo && b.start_date > dateTo) return false
+      return true
+    })
+  }, [data, search, dateFrom, dateTo])
+
+  const ongoing = filtered.filter((b) => ONGOING_STATUSES.includes(b.effective_status || b.status))
+  const completed = filtered.filter((b) => (b.effective_status || b.status) === 'COMPLETED')
+  const declined = filtered.filter((b) => DECLINED_STATUSES.includes(b.effective_status || b.status))
+  const ongoingFiltered =
+    ongoingSubFilter === 'ALL'
+      ? ongoing
+      : ongoing.filter((b) => (b.effective_status || b.status) === ongoingSubFilter)
+  const tabbed = { ongoing: ongoingFiltered, completed, declined }[tab]
 
   const actionMut = useMutation({
     mutationFn: ({ id, action }: { id: number; action: string }) => bookingAction(id, action),
@@ -80,6 +124,78 @@ export function BookingsPage() {
         </div>
       </div>
 
+      <div className="mt-6 flex flex-wrap gap-3">
+        <div className="min-w-[220px] flex-1">
+          <Field label={t('browseSearch')}>
+            <div className="relative">
+              <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-mist" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder={t('bookingsSearchPlaceholder')}
+                className="pl-9"
+              />
+            </div>
+          </Field>
+        </div>
+        <Field label={t('bookingsDateFrom')}>
+          <DatePicker value={dateFrom} onChange={setDateFrom} />
+        </Field>
+        <Field label={t('bookingsDateTo')}>
+          <DatePicker value={dateTo} onChange={setDateTo} />
+        </Field>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label={t('bookingsTitle')}>
+        <Button
+          variant={tab === 'ongoing' ? 'primary' : 'secondary'}
+          onClick={() => setTab('ongoing')}
+          aria-pressed={tab === 'ongoing'}
+        >
+          {t('bookingsTabOngoing')} ({ongoing.length})
+        </Button>
+        <Button
+          variant={tab === 'completed' ? 'primary' : 'secondary'}
+          onClick={() => setTab('completed')}
+          aria-pressed={tab === 'completed'}
+        >
+          {t('bookingsTabCompleted')} ({completed.length})
+        </Button>
+        <Button
+          variant={tab === 'declined' ? 'primary' : 'secondary'}
+          onClick={() => setTab('declined')}
+          aria-pressed={tab === 'declined'}
+        >
+          {t('bookingsTabDeclined')} ({declined.length})
+        </Button>
+      </div>
+
+      {tab === 'ongoing' ? (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {ONGOING_SUB_FILTERS.map((f) => {
+            const count =
+              f.value === 'ALL'
+                ? ongoing.length
+                : ongoing.filter((b) => (b.effective_status || b.status) === f.value).length
+            return (
+              <button
+                key={f.value}
+                type="button"
+                onClick={() => setOngoingSubFilter(f.value)}
+                aria-pressed={ongoingSubFilter === f.value}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                  ongoingSubFilter === f.value
+                    ? 'border-sage/50 bg-forest/35 text-mint'
+                    : 'border-line text-mist hover:border-sage/40 hover:text-cream'
+                }`}
+              >
+                {t(f.label)} ({count})
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+
       {isLoading ? (
         <div className="mt-8 space-y-3">
           <ListingCardSkeleton />
@@ -88,7 +204,7 @@ export function BookingsPage() {
       ) : null}
 
       <div className="mt-8 space-y-4">
-        {(data ?? []).map((b) => {
+        {tabbed.map((b) => {
           const status = b.effective_status || b.status
           const days = rentalDays(b.start_date, b.end_date)
           const rate = b.listing ? Number(b.listing.price_per_day) : 0
@@ -96,18 +212,26 @@ export function BookingsPage() {
           return (
             <div key={b.id} className="rounded-2xl border border-line bg-panel/60 p-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <p className="text-lg text-cream">
+                <div className="flex gap-3">
+                  <img
+                    src={b.listing?.images?.[0] ? mediaUrl(b.listing.images[0].url) : '/placeholder-decor.svg'}
+                    alt=""
+                    className="h-16 w-20 shrink-0 rounded-xl object-cover"
+                  />
+                  <div>
+                  <Link to={`/dashboard/bookings/${b.id}`} className="text-lg text-cream hover:text-mint">
                     {b.listing?.title ?? `${t('bookingLabel')} #${b.id}`}
-                  </p>
+                  </Link>
                   <p className="text-sm text-mist">
                     {b.start_date} → {b.end_date}
                   </p>
                   {asOwner && b.renter ? (
                     <p className="mt-1 text-sm text-mist">
                       {t('bookingRenter')}: {b.renter.full_name}
+                      {b.renter.phone ? ` · ${t('bookingRenterPhone')}: ${b.renter.phone}` : ''}
                     </p>
                   ) : null}
+                  </div>
                 </div>
                 <BookingStatusBadge status={status} />
               </div>
@@ -193,7 +317,7 @@ export function BookingsPage() {
             </div>
           )
         })}
-        {!data?.length && !isLoading ? (
+        {!tabbed.length && !isLoading ? (
           <EmptyState
             icon={<CalendarDays size={28} />}
             title={t('bookingsEmpty')}

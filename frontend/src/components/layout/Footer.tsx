@@ -1,66 +1,127 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Mail } from 'lucide-react'
+import { Globe, Mail, Phone, Send } from 'lucide-react'
 import { useLanguage } from '../../context/LanguageContext'
 import type { TranslationKey } from '../../i18n/translations'
 
 type FooterLink = { key: TranslationKey; to: string }
 
-const columns: { heading: TranslationKey; links: FooterLink[] }[] = [
-  {
-    heading: 'footerExplore',
-    links: [
-      { key: 'footerBrowse', to: '/browse' },
-      { key: 'navMap', to: '/map' },
-      { key: 'footerHow', to: '/#how-it-works' },
-      { key: 'footerFaq', to: '/faq' },
-    ],
-  },
-  {
-    heading: 'footerCompany',
-    links: [
-      { key: 'footerAbout', to: '/#about' },
-      { key: 'footerListItem', to: '/listings/new' },
-      { key: 'footerLegal', to: '/terms' },
-    ],
-  },
+const companyLinks: FooterLink[] = [
+  { key: 'footerAbout', to: '/#about' },
+  { key: 'footerHow', to: '/#how-it-works' },
+  { key: 'footerFaq', to: '/faq' },
+]
+
+const ownerLinks: FooterLink[] = [
+  { key: 'footerListItem', to: '/listings/new' },
+  { key: 'footerPricing', to: '/pricing' },
+  { key: 'footerOwnerGuide', to: '/faq' },
 ]
 
 export function Footer() {
   const { t } = useLanguage()
   const year = new Date().getFullYear()
+  const [email, setEmail] = useState('')
+  const [subscribed, setSubscribed] = useState(false)
+
+  function onSubscribe(e: React.FormEvent) {
+    e.preventDefault()
+    if (!email.trim()) return
+    setSubscribed(true)
+    setEmail('')
+  }
 
   return (
     <footer className="site-footer mt-16 w-full">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-12 sm:px-6 lg:flex-row lg:items-start lg:justify-between lg:gap-16 lg:px-8 lg:py-14">
-        <div className="max-w-sm shrink-0 lg:max-w-xs">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1.3fr_1fr_1fr_1.2fr] lg:gap-8 lg:px-8 lg:py-14">
+        <div className="max-w-sm">
           <Link to="/" className="inline-flex items-center gap-2.5 text-cream">
             <img src="/favicon.svg" alt="" className="h-8 w-8" />
             <span className="font-display text-2xl tracking-tight">{t('brand')}</span>
           </Link>
           <p className="mt-4 text-sm leading-relaxed text-mist">{t('footerTagline')}</p>
-          <a href="mailto:support@rentora.demo" className="site-footer-chip mt-5">
-            <Mail size={15} />
-            <span>{t('footerEmail')}</span>
-          </a>
+          <div className="mt-5 flex items-center gap-2.5">
+            <Link
+              to="/"
+              aria-label={t('brand')}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-mist transition hover:border-sage/50 hover:text-sage"
+            >
+              <Globe size={15} />
+            </Link>
+            <a
+              href="mailto:support@rentora.demo"
+              aria-label={t('footerEmail')}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-mist transition hover:border-sage/50 hover:text-sage"
+            >
+              <Mail size={15} />
+            </a>
+            <a
+              href={`tel:${t('footerPhone').replace(/\s+/g, '')}`}
+              aria-label={t('footerPhone')}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-mist transition hover:border-sage/50 hover:text-sage"
+            >
+              <Phone size={15} />
+            </a>
+          </div>
         </div>
 
-        <div className="grid flex-1 grid-cols-2 gap-8 sm:gap-12 lg:max-w-md lg:justify-items-start">
-          {columns.map((col) => (
-            <nav key={col.heading} aria-label={t(col.heading)}>
-              <p className="text-xs font-semibold uppercase tracking-wider text-cream">
-                {t(col.heading)}
-              </p>
-              <ul className="mt-4 space-y-2.5">
-                {col.links.map((link) => (
-                  <li key={link.key}>
-                    <Link to={link.to} className="site-footer-link">
-                      {t(link.key)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
+        <nav aria-label={t('footerCompany')}>
+          <p className="text-xs font-semibold uppercase tracking-wider text-cream">{t('footerCompany')}</p>
+          <ul className="mt-4 space-y-2.5">
+            {companyLinks.map((link) => (
+              <li key={link.key}>
+                <Link to={link.to} className="site-footer-link">
+                  {t(link.key)}
+                </Link>
+              </li>
+            ))}
+            <li>
+              <a href="mailto:support@rentora.demo" className="site-footer-link">
+                {t('footerContact')}
+              </a>
+            </li>
+          </ul>
+        </nav>
+
+        <nav aria-label={t('footerForOwners')}>
+          <p className="text-xs font-semibold uppercase tracking-wider text-cream">{t('footerForOwners')}</p>
+          <ul className="mt-4 space-y-2.5">
+            {ownerLinks.map((link) => (
+              <li key={link.key}>
+                <Link to={link.to} className="site-footer-link">
+                  {t(link.key)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-cream">
+            {t('footerNewsletterTitle')}
+          </p>
+          <p className="mt-4 text-sm text-mist">{t('footerNewsletterLead')}</p>
+          {subscribed ? (
+            <p className="mt-3 text-sm text-mint">{t('footerNewsletterThanks')}</p>
+          ) : (
+            <form onSubmit={onSubscribe} className="mt-3 flex gap-2">
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder={t('footerNewsletterPlaceholder')}
+                className="w-full min-w-0 rounded-xl border border-line bg-panel-2/60 px-3 py-2.5 text-sm text-cream placeholder:text-mist/60 outline-none transition focus:border-sage/70 focus:ring-2 focus:ring-sage/20"
+              />
+              <button
+                type="submit"
+                aria-label={t('footerNewsletterSubmit')}
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-forest text-mint transition hover:bg-sage hover:text-ink"
+              >
+                <Send size={16} />
+              </button>
+            </form>
+          )}
         </div>
       </div>
 
@@ -69,7 +130,14 @@ export function Footer() {
           <p>
             © {year} {t('brand')}. {t('footerRights')}
           </p>
-          <p>{t('footerTaglineShort')}</p>
+          <div className="flex items-center gap-4">
+            <Link to="/terms" className="site-footer-link">
+              {t('footerTerms')}
+            </Link>
+            <Link to="/privacy" className="site-footer-link">
+              {t('footerPrivacy')}
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

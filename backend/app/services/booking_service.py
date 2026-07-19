@@ -13,8 +13,10 @@ from app.models import (
     Listing,
     ListingStatus,
     Message,
+    NotificationType,
     User,
 )
+from app.services import notification_service
 
 
 BLOCKING_STATUSES = {
@@ -116,8 +118,23 @@ def create_booking(
     db.add(booking)
     db.flush()
 
+    db.add(
+        Message(
+            booking_id=booking.id,
+            sender_id=renter.id,
+            is_system=True,
+            body=(
+                "Customer requested to rent this decoration.\n"
+                "მომხმარებელმა მოითხოვა აღნიშნული დეკორაციის დაჯავშნა."
+            ),
+        )
+    )
     if message:
         db.add(Message(booking_id=booking.id, sender_id=renter.id, body=message))
+
+    notification_service.create_notification(
+        db, user_id=listing.owner_id, booking=booking, type=NotificationType.BOOKING_REQUESTED
+    )
 
     db.commit()
     return get_booking(db, booking.id)
@@ -175,6 +192,9 @@ def apply_action(db: Session, booking_id: int, user: User, action: str) -> Booki
     action = action.lower().strip()
     owner_id = booking.listing.owner_id
 
+    notify_user_id: int | None = None
+    notify_type: NotificationType | None = None
+
     if action == "accept":
         if user.id != owner_id:
             raise HTTPException(status_code=403, detail="Only the owner can accept")
@@ -182,12 +202,14 @@ def apply_action(db: Session, booking_id: int, user: User, action: str) -> Booki
             raise HTTPException(status_code=400, detail="Only pending bookings can be accepted")
         assert_dates_available(db, booking.listing_id, booking.start_date, booking.end_date, booking.id)
         booking.status = BookingStatus.ACCEPTED
+        notify_user_id, notify_type = booking.renter_id, NotificationType.BOOKING_ACCEPTED
     elif action == "decline":
         if user.id != owner_id:
             raise HTTPException(status_code=403, detail="Only the owner can decline")
         if booking.status != BookingStatus.PENDING:
             raise HTTPException(status_code=400, detail="Only pending bookings can be declined")
         booking.status = BookingStatus.DECLINED
+        notify_user_id, notify_type = booking.renter_id, NotificationType.BOOKING_DECLINED
     elif action == "cancel":
         if user.id not in {booking.renter_id, owner_id}:
             raise HTTPException(status_code=403, detail="Not allowed")
@@ -198,16 +220,25 @@ def apply_action(db: Session, booking_id: int, user: User, action: str) -> Booki
         if booking.status == BookingStatus.CONFIRMED:
             _clear_booked_blocks(db, booking)
         booking.status = BookingStatus.CANCELLED
+        notify_user_id = owner_id if user.id == booking.renter_id else booking.renter_id
+        notify_type = NotificationType.BOOKING_CANCELLED
     elif action == "complete":
         if user.id not in {booking.renter_id, owner_id}:
             raise HTTPException(status_code=403, detail="Not allowed")
         if effective_status(booking) not in {BookingStatus.ACTIVE, BookingStatus.CONFIRMED, BookingStatus.COMPLETED}:
             raise HTTPException(status_code=400, detail="Booking cannot be completed yet")
         booking.status = BookingStatus.COMPLETED
+        notify_user_id = owner_id if user.id == booking.renter_id else booking.renter_id
+        notify_type = NotificationType.BOOKING_COMPLETED
     else:
         raise HTTPException(status_code=400, detail="Unknown action")
 
     db.add(booking)
+    db.flush()
+    if notify_user_id is not None and notify_type is not None:
+        notification_service.create_notification(
+            db, user_id=notify_user_id, booking=booking, type=notify_type
+        )
     db.commit()
     return get_booking(db, booking.id)
 
@@ -242,6 +273,10 @@ def demo_pay(db: Session, booking_id: int, renter: User) -> Booking:
                 )
             )
     db.add(booking)
+    db.flush()
+    notification_service.create_notification(
+        db, user_id=booking.listing.owner_id, booking=booking, type=NotificationType.PAYMENT_SUCCEEDED
+    )
     db.commit()
     return get_booking(db, booking.id)
 

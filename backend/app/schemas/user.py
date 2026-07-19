@@ -22,6 +22,7 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = Field(default=None, min_length=1, max_length=120)
     city: Optional[str] = None
+    phone: Optional[str] = Field(default=None, max_length=30)
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
     is_owner: Optional[bool] = None
@@ -34,6 +35,7 @@ class UserOut(BaseModel):
     email: EmailStr
     full_name: str
     city: Optional[str] = None
+    phone: Optional[str] = None
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
     role: UserRole

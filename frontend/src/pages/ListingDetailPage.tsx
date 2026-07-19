@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { Heart, MapPin } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Heart, MapPin } from 'lucide-react'
 import { fetchAvailability, fetchListing } from '../api/listings'
 import { createBooking } from '../api/bookings'
 import { toggleFavorite } from '../api/favorites'
@@ -10,9 +10,8 @@ import { useAuth } from '../context/AuthContext'
 import { ReviewsSection } from '../components/reviews/ReviewsSection'
 import { StarRating } from '../components/reviews/StarRating'
 import { Button } from '../components/ui/Button'
-import { Field, Textarea } from '../components/ui/Input'
+import { Field, Select, Textarea } from '../components/ui/Input'
 import { DatePicker } from '../components/ui/DatePicker'
-import { CityCombobox } from '../components/ui/CityCombobox'
 import { Skeleton } from '../components/ui/Skeleton'
 import { useLanguage } from '../context/LanguageContext'
 import { categoryLabel, conditionLabel } from '../i18n/translations'
@@ -49,6 +48,7 @@ export function ListingDetailPage() {
   const [error, setError] = useState('')
   const [activeImg, setActiveImg] = useState(0)
   const [imgBroken, setImgBroken] = useState(false)
+  const thumbScrollerRef = useRef<HTMLDivElement>(null)
 
   const { data: listing, isLoading } = useQuery({
     queryKey: ['listing', listingId],
@@ -140,7 +140,7 @@ export function ListingDetailPage() {
   if (isLoading || !listing) {
     return (
       <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
-        <Skeleton className="aspect-[4/3] w-full rounded-3xl" />
+        <Skeleton className="h-80 w-full rounded-3xl sm:h-96 lg:h-[28rem]" />
         <Skeleton className="h-80 w-full rounded-3xl" />
       </div>
     )
@@ -153,47 +153,98 @@ export function ListingDetailPage() {
   const ownerRating = listing.owner?.avg_rating
   const ownerReviewCount = listing.owner?.review_count ?? 0
 
+  function goToImg(next: number) {
+    if (!images.length) return
+    setActiveImg((next + images.length) % images.length)
+    setImgBroken(false)
+  }
+
+  function scrollThumbs(dir: number) {
+    thumbScrollerRef.current?.scrollBy({ left: dir * 220, behavior: 'smooth' })
+  }
+
   return (
     <div className="grid gap-10 lg:grid-cols-[1.4fr_1fr]">
       <div>
-        <div className="overflow-hidden rounded-3xl border border-line bg-panel">
+        <div className="relative flex h-80 items-center justify-center overflow-hidden rounded-3xl border border-line bg-panel sm:h-96 lg:h-[28rem]">
           {images[activeImg] && !imgBroken ? (
             <img
               src={mediaUrl(images[activeImg].url)}
               alt={listing.title}
               onError={() => setImgBroken(true)}
-              className="aspect-[4/3] w-full object-cover"
+              className="h-full w-full object-contain"
             />
           ) : (
-            <img src="/placeholder-decor.svg" alt="" className="aspect-[4/3] w-full object-cover" />
+            <img src="/placeholder-decor.svg" alt="" className="h-full w-full object-contain" />
           )}
+          {images.length > 1 ? (
+            <>
+              <button
+                type="button"
+                aria-label={t('detailPrevPhoto')}
+                onClick={() => goToImg(activeImg - 1)}
+                className="absolute left-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-panel/80 text-cream backdrop-blur transition hover:bg-panel-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/50"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                type="button"
+                aria-label={t('detailNextPhoto')}
+                onClick={() => goToImg(activeImg + 1)}
+                className="absolute right-3 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-panel/80 text-cream backdrop-blur transition hover:bg-panel-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sage/50"
+              >
+                <ChevronRight size={18} />
+              </button>
+              <span className="absolute bottom-3 right-3 rounded-full bg-panel/80 px-2.5 py-1 text-xs text-cream backdrop-blur">
+                {activeImg + 1} / {images.length}
+              </span>
+            </>
+          ) : null}
         </div>
         {images.length > 1 ? (
-          <div className="mt-3 flex gap-2 overflow-x-auto">
-            {images.map((img, i) => (
-              <button
-                key={img.id}
-                type="button"
-                aria-label={`${listing.title} ${i + 1}`}
-                aria-pressed={i === activeImg}
-                onClick={() => {
-                  setActiveImg(i)
-                  setImgBroken(false)
-                }}
-                className={`h-20 w-24 shrink-0 overflow-hidden rounded-xl border ${
-                  i === activeImg ? 'border-sage' : 'border-line'
-                }`}
-              >
-                <img
-                  src={mediaUrl(img.url)}
-                  alt=""
-                  onError={(e) => {
-                    ;(e.target as HTMLImageElement).src = '/placeholder-decor.svg'
+          <div className="relative mt-3">
+            <button
+              type="button"
+              aria-label={t('detailPrevPhoto')}
+              onClick={() => scrollThumbs(-1)}
+              className="absolute -left-3 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-panel text-cream shadow transition hover:bg-panel-2"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <div ref={thumbScrollerRef} className="flex gap-2 overflow-x-auto scroll-smooth px-1">
+              {images.map((img, i) => (
+                <button
+                  key={img.id}
+                  type="button"
+                  aria-label={`${listing.title} ${i + 1}`}
+                  aria-pressed={i === activeImg}
+                  onClick={() => {
+                    setActiveImg(i)
+                    setImgBroken(false)
                   }}
-                  className="h-full w-full object-cover"
-                />
-              </button>
-            ))}
+                  className={`h-20 w-24 shrink-0 overflow-hidden rounded-xl border ${
+                    i === activeImg ? 'border-sage' : 'border-line'
+                  }`}
+                >
+                  <img
+                    src={mediaUrl(img.url)}
+                    alt=""
+                    onError={(e) => {
+                      ;(e.target as HTMLImageElement).src = '/placeholder-decor.svg'
+                    }}
+                    className="h-full w-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              aria-label={t('detailNextPhoto')}
+              onClick={() => scrollThumbs(1)}
+              className="absolute -right-3 top-1/2 z-10 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-line bg-panel text-cream shadow transition hover:bg-panel-2"
+            >
+              <ChevronRight size={16} />
+            </button>
           </div>
         ) : null}
 
@@ -277,19 +328,26 @@ export function ListingDetailPage() {
 
         <div className="mt-5">
           <Field label={t('detailRentLocation')}>
-            <CityCombobox
+            <Select
               value={rentCity}
-              onChange={(v) => {
-                setRentCity(v)
+              onChange={(e) => {
+                setRentCity(e.target.value)
                 setError('')
               }}
-              placeholder={t('registerCityPlaceholder')}
-            />
+            >
+              <option value="">{t('registerCityPlaceholder')}</option>
+              {GEORGIAN_CITIES.map((c) => (
+                <option key={c.en} value={cityLabel(lang, c)}>
+                  {cityLabel(lang, c)}
+                </option>
+              ))}
+            </Select>
           </Field>
           <Field label={t('detailStartDate')}>
             <DatePicker
               value={start}
               min={today}
+              disabledDates={blockedSet}
               onChange={(v) => {
                 setStart(v)
                 setError('')
@@ -300,6 +358,7 @@ export function ListingDetailPage() {
             <DatePicker
               value={end}
               min={start || today}
+              disabledDates={blockedSet}
               onChange={(v) => {
                 setEnd(v)
                 setError('')

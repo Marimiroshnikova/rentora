@@ -72,6 +72,14 @@ export function fetchAvailability(id: number) {
   return api<AvailabilityBlock[]>(`/listings/${id}/availability`)
 }
 
+export function setAvailability(id: number, dates: string[]) {
+  return api<AvailabilityBlock[]>(`/listings/${id}/availability`, { method: 'PUT', json: { dates } })
+}
+
+export function deleteListingImage(listingId: number, imageId: number) {
+  return api<Listing>(`/listings/${listingId}/images/${imageId}`, { method: 'DELETE' })
+}
+
 export async function uploadListingImages(id: number, files: FileList | File[]) {
   const form = new FormData()
   Array.from(files).forEach((f) => form.append('files', f))

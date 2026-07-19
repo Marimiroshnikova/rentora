@@ -1,14 +1,19 @@
-from fastapi import APIRouter, Depends, Query
+import uuid
+
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
 from app.schemas.booking import ReviewListOut, ReviewOut
 from app.schemas.user import UserOut, UserUpdate
 from app.services import review_service
+from app.upload_utils import read_and_validate_image
 
 router = APIRouter(prefix="/users", tags=["users"])
+settings = get_settings()
 
 
 @router.patch("/me", response_model=UserOut)
@@ -20,6 +25,23 @@ def update_me(
     data = payload.model_dump(exclude_unset=True)
     for key, value in data.items():
         setattr(user, key, value)
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return UserOut.model_validate(user)
+
+
+@router.post("/me/avatar", response_model=UserOut)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    content, out_ext = await read_and_validate_image(file)
+    name = f"{uuid.uuid4().hex}{out_ext}"
+    dest = settings.upload_path / name
+    dest.write_bytes(content)
+    user.avatar_url = f"/uploads/{name}"
     db.add(user)
     db.commit()
     db.refresh(user)
