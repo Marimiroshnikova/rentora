@@ -8,6 +8,7 @@ const map: Record<BookingStatus, string> = {
   CONFIRMED: 'bg-forest/40 text-mint border-sage/40',
   ACTIVE: 'bg-emerald-900/40 text-emerald-200 border-emerald-700/40',
   COMPLETED: 'bg-panel-2 text-mist border-line',
+  EXPIRED: 'bg-red-900/40 text-red-200 border-red-800/40',
   DECLINED: 'bg-red-900/40 text-red-200 border-red-800/40',
   CANCELLED: 'bg-panel-2 text-mist border-line',
 }

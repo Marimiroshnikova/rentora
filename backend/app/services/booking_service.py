@@ -33,8 +33,26 @@ def daterange(start: date, end: date) -> list[date]:
     return [start + timedelta(days=i) for i in range(days)]
 
 
+def expire_overdue_bookings(db: Session, today: date | None = None) -> None:
+    today = today or date.today()
+    overdue = db.scalars(
+        select(Booking).where(
+            Booking.status == BookingStatus.PENDING,
+            Booking.start_date < today,
+        )
+    ).all()
+    if not overdue:
+        return
+    for booking in overdue:
+        booking.status = BookingStatus.EXPIRED
+        db.add(booking)
+    db.commit()
+
+
 def effective_status(booking: Booking, today: date | None = None) -> BookingStatus:
     today = today or date.today()
+    if booking.status == BookingStatus.PENDING and today > booking.start_date:
+        return BookingStatus.EXPIRED
     if booking.status == BookingStatus.CONFIRMED:
         if today > booking.end_date:
             return BookingStatus.COMPLETED
@@ -47,7 +65,11 @@ def effective_status(booking: Booking, today: date | None = None) -> BookingStat
 
 def sync_booking_status(db: Session, booking: Booking) -> Booking:
     eff = effective_status(booking)
-    if eff != booking.status and eff in {BookingStatus.ACTIVE, BookingStatus.COMPLETED}:
+    if eff != booking.status and eff in {
+        BookingStatus.ACTIVE,
+        BookingStatus.COMPLETED,
+        BookingStatus.EXPIRED,
+    }:
         booking.status = eff
         db.add(booking)
         db.commit()
@@ -56,6 +78,7 @@ def sync_booking_status(db: Session, booking: Booking) -> Booking:
 
 
 def assert_dates_available(db: Session, listing_id: int, start: date, end: date, exclude_booking_id: int | None = None) -> None:
+    expire_overdue_bookings(db)
     if end <= start:
         raise HTTPException(status_code=400, detail="end_date must be after start_date")
     if start < date.today():
@@ -96,6 +119,7 @@ def create_booking(
     end_date: date,
     message: str | None = None,
 ) -> Booking:
+    expire_overdue_bookings(db)
     listing = db.get(Listing, listing_id)
     if not listing or listing.status != ListingStatus.ACTIVE:
         raise HTTPException(status_code=404, detail="Listing not found or not available")
@@ -141,6 +165,7 @@ def create_booking(
 
 
 def get_booking(db: Session, booking_id: int) -> Booking:
+    expire_overdue_bookings(db)
     booking = db.scalars(
         select(Booking)
         .options(
@@ -156,6 +181,7 @@ def get_booking(db: Session, booking_id: int) -> Booking:
 
 
 def list_bookings(db: Session, user: User, as_owner: bool) -> list[Booking]:
+    expire_overdue_bookings(db)
     if as_owner:
         query = (
             select(Booking)
@@ -188,6 +214,7 @@ def _assert_party(booking: Booking, user: User) -> None:
 
 
 def apply_action(db: Session, booking_id: int, user: User, action: str) -> Booking:
+    expire_overdue_bookings(db)
     booking = get_booking(db, booking_id)
     action = action.lower().strip()
     owner_id = booking.listing.owner_id
@@ -244,6 +271,7 @@ def apply_action(db: Session, booking_id: int, user: User, action: str) -> Booki
 
 
 def demo_pay(db: Session, booking_id: int, renter: User) -> Booking:
+    expire_overdue_bookings(db)
     booking = get_booking(db, booking_id)
     if booking.renter_id != renter.id:
         raise HTTPException(status_code=403, detail="Only the renter can pay")

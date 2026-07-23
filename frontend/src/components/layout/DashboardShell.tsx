@@ -37,6 +37,13 @@ export function DashboardShell() {
           </Button>
         </Link>
         {user?.is_owner ? (
+          <Link to="/dashboard/reports">
+            <Button variant={pathname === '/dashboard/reports' ? 'secondary' : 'ghost'}>
+              {t('dashboardReports')}
+            </Button>
+          </Link>
+        ) : null}
+        {user?.is_owner ? (
           <Link to="/dashboard/listings">
             <Button variant={pathname === '/dashboard/listings' ? 'secondary' : 'ghost'}>
               {t('dashboardMyListings')}

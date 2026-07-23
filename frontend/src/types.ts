@@ -17,6 +17,7 @@ export type BookingStatus =
   | 'CONFIRMED'
   | 'ACTIVE'
   | 'COMPLETED'
+  | 'EXPIRED'
   | 'DECLINED'
   | 'CANCELLED'
 export type NotificationType =
