@@ -7,10 +7,12 @@ services:
     rootDir: backend
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: alembic upgrade head && python seed.py && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: bash scripts/render_start.sh
     envVars:
       - key: PYTHON_VERSION
         value: "3.11.9"
+      - key: ENVIRONMENT
+        value: production
       - key: SECRET_KEY
         generateValue: true
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
@@ -19,6 +21,6 @@ services:
         value: uploads
       - key: DATABASE_URL
         value: sqlite:///./rentora.db
-      # After the frontend is live, set this to your Vercel URL, e.g. https://rentora.vercel.app
+      # Production frontend (also allowed via vercel.app regex in CORS middleware)
       - key: CORS_ORIGINS
-        value: http://localhost:5173
+        value: https://rentora-btu.vercel.app

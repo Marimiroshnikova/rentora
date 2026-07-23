@@ -165,7 +165,10 @@ export function OwnerDashboard() {
                     borderRadius: 16,
                     color: '#f8fafc',
                   }}
-                  formatter={(value) => [`${Number(value).toFixed(2)} ₾`, t('dashboardReportsRevenue')]}
+                  formatter={(value) => [
+                    `${Number(value ?? 0).toFixed(2)} ₾`,
+                    t('dashboardReportsRevenue'),
+                  ]}
                 />
                 <Line
                   type="monotone"
