@@ -6,7 +6,7 @@ Rentora is a peer-to-peer marketplace for renting event decoration in Georgia: b
 
 The app is deployed and free to open:
 
-- **Website:** https://rentora-btu.vercel.app
+- **Website:** [https://rentora-btu.vercel.app/](https://rentora-btu.vercel.app/)
 - **API:** https://rentora-api-jopw.onrender.com
 
 Hosted on **Vercel** (frontend) and **Render** (backend), both on free tiers. The backend sleeps when idle, so the first request after a while can take up to about 50 seconds to wake.
@@ -194,8 +194,9 @@ VITE_UPLOAD_ORIGIN=http://127.0.0.1:8001
 
 ## Deployment
 
+- **Live website:** [https://rentora-btu.vercel.app/](https://rentora-btu.vercel.app/)
 - **Frontend on Vercel:** import the repo, set Root Directory to `frontend`, and set `VITE_API_URL` and `VITE_UPLOAD_ORIGIN` to the backend URL. An SPA rewrite is included in `frontend/vercel.json`.
-- **Backend on Render:** the included `render.yaml` provisions the API service (install, migrate, seed, run). Set `CORS_ORIGINS` to the Vercel URL.
+- **Backend on Render:** the included `render.yaml` provisions the API service (install, migrate, seed, run). Set `CORS_ORIGINS` to `https://rentora-btu.vercel.app`.
 - For production, use a managed Postgres instead of SQLite and move uploaded images to object storage, since free instances use an ephemeral filesystem.
 
 ## Project structure

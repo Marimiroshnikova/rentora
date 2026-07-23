@@ -5,7 +5,7 @@ Rentora has two parts, hosted on two free services:
 - **Frontend** (React) → **Vercel**
 - **Backend** (FastAPI) → **Render**
 
-End result: a public URL like `https://rentora.vercel.app` you can open and share.
+End result: the live site at [https://rentora-btu.vercel.app/](https://rentora-btu.vercel.app/).
 
 **Before you start:** push this repo to **GitHub** (both hosts deploy from a Git repo). Config files are already included: `render.yaml` (backend) and `frontend/vercel.json` (SPA routing).
 
@@ -29,18 +29,18 @@ Copy your API URL; you need it next.
 4. Add **Environment Variables** (use your Render URL from Step 1):
    - `VITE_API_URL` = `https://rentora-api.onrender.com/api/v1`
    - `VITE_UPLOAD_ORIGIN` = `https://rentora-api.onrender.com`
-5. **Deploy.** You get your public URL, e.g. `https://rentora.vercel.app`.
+5. **Deploy.** Production URL: [https://rentora-btu.vercel.app/](https://rentora-btu.vercel.app/) (set this custom domain / project name in Vercel if needed).
 
 ## Step 3: Connect them (CORS)
 
 The backend must allow requests from your Vercel domain:
 
-1. Render → your service → **Environment** → set `CORS_ORIGINS` = `https://rentora.vercel.app` (your exact Vercel URL).
+1. Render → your service → **Environment** → set `CORS_ORIGINS` = `https://rentora-btu.vercel.app`.
 2. Save. Render redeploys automatically.
 
 ## Step 4: Open your site
 
-Visit your Vercel URL and log in with a demo account (password `Demo1234!`):
+Visit [https://rentora-btu.vercel.app/](https://rentora-btu.vercel.app/) and log in with a demo account (password `Demo1234!`):
 
 - `admin@rentora.demo`, `renter@rentora.demo`, `owner@rentora.demo`
 
