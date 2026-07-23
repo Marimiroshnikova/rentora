@@ -13,19 +13,23 @@ const STEPS: { status: BookingStatus; label: TranslationKey }[] = [
 const ORDER: BookingStatus[] = ['PENDING', 'ACCEPTED', 'CONFIRMED', 'ACTIVE', 'COMPLETED']
 
 function stepIndex(status: BookingStatus): number {
-  if (status === 'DECLINED' || status === 'CANCELLED') return -1
+  if (status === 'DECLINED' || status === 'CANCELLED' || status === 'EXPIRED') return -1
   return ORDER.indexOf(status)
 }
 
 export function BookingTimeline({ status }: { status: BookingStatus }) {
   const { t } = useLanguage()
   const current = stepIndex(status)
-  const failed = status === 'DECLINED' || status === 'CANCELLED'
+  const failed = status === 'DECLINED' || status === 'CANCELLED' || status === 'EXPIRED'
 
   if (failed) {
     return (
       <p className="mt-3 text-xs font-semibold text-red-300">
-        {status === 'DECLINED' ? t('timelineDeclined') : t('timelineCancelled')}
+        {status === 'DECLINED'
+          ? t('timelineDeclined')
+          : status === 'CANCELLED'
+            ? t('timelineCancelled')
+            : t('timelineExpired')}
       </p>
     )
   }

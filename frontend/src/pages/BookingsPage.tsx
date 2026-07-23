@@ -25,7 +25,7 @@ type StatusTab = 'ongoing' | 'completed' | 'declined'
 type OngoingSubStatus = 'ALL' | 'PENDING' | 'ACCEPTED' | 'CONFIRMED' | 'ACTIVE'
 
 const ONGOING_STATUSES = ['PENDING', 'ACCEPTED', 'CONFIRMED', 'ACTIVE']
-const DECLINED_STATUSES = ['DECLINED', 'CANCELLED']
+const DECLINED_STATUSES = ['DECLINED', 'CANCELLED', 'EXPIRED']
 
 const ONGOING_SUB_FILTERS: { value: OngoingSubStatus; label: TranslationKey }[] = [
   { value: 'ALL', label: 'browseAll' },

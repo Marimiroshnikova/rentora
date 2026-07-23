@@ -15,3 +15,10 @@ export function AdminRoute({ children }: { children: React.ReactNode }) {
   if (!user || user.role !== 'ADMIN') return <Navigate to="/" replace />
   return <>{children}</>
 }
+
+export function OwnerRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth()
+  if (loading) return <p className="text-mist">Loading…</p>
+  if (!user || !user.is_owner) return <Navigate to="/" replace />
+  return <>{children}</>
+}

@@ -7,7 +7,7 @@ import { Layout } from './components/layout/Layout'
 import { DashboardShell } from './components/layout/DashboardShell'
 import { ScrollToTop } from './components/layout/ScrollToTop'
 import { AuthLayout } from './components/layout/AuthLayout'
-import { AdminRoute, PrivateRoute } from './components/auth/PrivateRoute'
+import { AdminRoute, OwnerRoute, PrivateRoute } from './components/auth/PrivateRoute'
 import { HomePage } from './pages/HomePage'
 import { BrowsePage } from './pages/BrowsePage'
 import { ListingDetailPage } from './pages/ListingDetailPage'
@@ -24,6 +24,7 @@ import { NotificationsPage } from './pages/NotificationsPage'
 import { MessagesPage } from './pages/MessagesPage'
 import { FavoritesPage } from './pages/FavoritesPage'
 import { AdminPage } from './pages/AdminPage'
+import { OwnerDashboard } from './pages/OwnerDashboard'
 import { FaqPage } from './pages/FaqPage'
 import { MapPage } from './pages/MapPage'
 import { LegalPage, TermsPrivacyPage } from './pages/LegalPage'
@@ -98,6 +99,14 @@ export default function App() {
                     <Route path="dashboard/notifications" element={<NotificationsPage />} />
                     <Route path="dashboard/messages" element={<MessagesPage />} />
                     <Route path="dashboard/favorites" element={<FavoritesPage />} />
+                    <Route
+                      path="dashboard/reports"
+                      element={
+                        <OwnerRoute>
+                          <OwnerDashboard />
+                        </OwnerRoute>
+                      }
+                    />
                     <Route path="dashboard/listings" element={<MyListingsPage />} />
                   </Route>
                   <Route
